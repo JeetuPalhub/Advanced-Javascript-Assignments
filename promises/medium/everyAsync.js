@@ -4,6 +4,12 @@
 // The function should evaluate the predicate for each element and resolve to true only if all predicates return true. 
 // The evaluation should stop immediately and resolve to false as soon as any predicate fails.
 
-async function everyAsync(array, predicate) {}
+async function everyAsync(array, predicate) {
+  for (const item of array) {
+    const result = await predicate(item);
+    if (!result) return false;
+  }
+  return true;
+}
 
 module.exports = everyAsync;

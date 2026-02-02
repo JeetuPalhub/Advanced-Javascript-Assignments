@@ -13,7 +13,47 @@
 //
 // The function should return a map of taskId → result.
 
-async function runTaskGraph(tasks) {}
+async function runTaskGraph(tasks) {
+  const taskMap = new Map(tasks.map((task) => [task.id, task]));
+
+  for (const task of tasks) {
+    const deps = task.dependencies || [];
+    for (const dep of deps) {
+      if (!taskMap.has(dep)) {
+        throw new Error(`Missing dependency: ${dep}`);
+      }
+    }
+  }
+
+  const results = new Map();
+  const inFlight = new Map();
+
+  const execute = (id, stack) => {
+    if (results.has(id)) return Promise.resolve(results.get(id));
+    if (inFlight.has(id)) return inFlight.get(id);
+    if (stack.has(id)) {
+      return Promise.reject(new Error("Circular dependency detected"));
+    }
+
+    const task = taskMap.get(id);
+    const nextStack = new Set(stack);
+    nextStack.add(id);
+    const deps = task.dependencies || [];
+
+    const promise = Promise.all(deps.map((dep) => execute(dep, nextStack)))
+      .then(() => task.action())
+      .then((value) => {
+        results.set(id, value);
+        return value;
+      });
+
+    inFlight.set(id, promise);
+    return promise;
+  };
+
+  await Promise.all([...taskMap.keys()].map((id) => execute(id, new Set())));
+  return results;
+}
 
 
 module.exports = runTaskGraph;

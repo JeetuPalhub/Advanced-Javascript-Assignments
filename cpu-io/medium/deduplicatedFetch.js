@@ -6,7 +6,20 @@
 
 const pendingRequests = new Map();
 
-function deduplicatedFetch(id, apiCall) {}
+function deduplicatedFetch(id, apiCall) {
+  if (pendingRequests.has(id)) {
+    return pendingRequests.get(id);
+  }
+
+  const promise = Promise.resolve()
+    .then(() => apiCall(id))
+    .finally(() => {
+      pendingRequests.delete(id);
+    });
+
+  pendingRequests.set(id, promise);
+  return promise;
+}
 
 module.exports = deduplicatedFetch;
 

@@ -11,11 +11,25 @@
 // by yielding execution voluntarily.
 
 class Scheduler {
-  constructor() {}
+  constructor() {
+    this.queue = [];
+    this._seq = 0;
+  }
 
-  schedule(task, priority = 0) {}
+  schedule(task, priority = 0) {
+    this.queue.push({ task, priority, seq: this._seq++ });
+  }
 
-  async run() {}
+  async run() {
+    this.queue.sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      return a.seq - b.seq;
+    });
+    for (const item of this.queue) {
+      await item.task();
+    }
+    this.queue = [];
+  }
 }
 
   

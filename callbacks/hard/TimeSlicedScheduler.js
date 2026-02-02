@@ -9,11 +9,23 @@
 // This simulates cooperative multitasking used in UI frameworks.
 
 class TimeSlicedScheduler {
-  constructor() {}
+  constructor() {
+    this.queue = [];
+  }
 
-  schedule(task) {}
+  schedule(task) {
+    this.queue.push(task);
+  }
 
-  async run() {}
+  async run() {
+    while (this.queue.length > 0) {
+      const task = this.queue.shift();
+      await task();
+      if (this.queue.length > 0) {
+        await new Promise((res) => setTimeout(res, 0));
+      }
+    }
+  }
 }
 
   module.exports = TimeSlicedScheduler;

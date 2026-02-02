@@ -9,6 +9,38 @@
 // 3. Only one network call should be made per batch window
 
 function createBatcher(fetchBulk, delayMs = 50) {
-  return function add(id) {};
+  let timer = null;
+  let pending = new Map();
+
+  const flush = async () => {
+    const batch = pending;
+    pending = new Map();
+    timer = null;
+
+    const ids = Array.from(batch.keys());
+    try {
+      const results = await fetchBulk(ids);
+      ids.forEach((id) => {
+        const handlers = batch.get(id) || [];
+        handlers.forEach(({ resolve }) => resolve(results[id]));
+      });
+    } catch (err) {
+      ids.forEach((id) => {
+        const handlers = batch.get(id) || [];
+        handlers.forEach(({ reject }) => reject(err));
+      });
+    }
+  };
+
+  return function add(id) {
+    return new Promise((resolve, reject) => {
+      if (!pending.has(id)) pending.set(id, []);
+      pending.get(id).push({ resolve, reject });
+
+      if (!timer) {
+        timer = setTimeout(flush, delayMs);
+      }
+    });
+  };
 }
 module.exports = createBatcher;

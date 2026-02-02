@@ -17,11 +17,45 @@
 // 4. Tasks must execute asynchronously
 
 class FairScheduler {
-  constructor(agingFactor = 1) {}
+  constructor(agingFactor = 1) {
+    this.agingFactor = agingFactor;
+    this.queue = [];
+    this._seq = 0;
+  }
 
-  schedule(task, priority = 0) {}
+  schedule(task, priority = 0) {
+    this.queue.push({
+      task,
+      priority,
+      enqueuedAt: Date.now(),
+      seq: this._seq++,
+    });
+  }
 
-  async run() {}
+  async run() {
+    while (this.queue.length > 0) {
+      const now = Date.now();
+      let bestIndex = 0;
+      let bestScore = -Infinity;
+
+      for (let i = 0; i < this.queue.length; i++) {
+        const item = this.queue[i];
+        const waitTime = now - item.enqueuedAt;
+        const score = item.priority + this.agingFactor * waitTime;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = i;
+        } else if (score === bestScore) {
+          if (item.seq < this.queue[bestIndex].seq) {
+            bestIndex = i;
+          }
+        }
+      }
+
+      const [next] = this.queue.splice(bestIndex, 1);
+      await next.task();
+    }
+  }
 }
 
   module.exports = FairScheduler;

@@ -9,10 +9,14 @@ function switchMap(apiCall) {
   
     return async (...args) => {
       const token = ++lastToken;
-      const result = await apiCall(...args);
-  
-      if (token !== lastToken) return undefined;
-      return result;
+      try {
+        const result = await apiCall(...args);
+        if (token !== lastToken) return undefined;
+        return result;
+      } catch (err) {
+        if (token !== lastToken) return undefined;
+        throw err;
+      }
     };
   }
   
